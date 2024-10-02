@@ -1,0 +1,1 @@
+ALTER TABLE `guest` ADD `is_attending` integer;

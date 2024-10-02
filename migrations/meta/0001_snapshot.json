@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4516fb51-7c81-4b47-b89c-9e1c24203961",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "0f4ba22e-152a-4c50-b3c8-e42b582e599f",
+  "prevId": "4516fb51-7c81-4b47-b89c-9e1c24203961",
   "tables": {
     "guest": {
       "name": "guest",
@@ -26,6 +26,34 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "attending_ceremony": {
+          "name": "attending_ceremony",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attending_reception": {
+          "name": "attending_reception",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attending_dinner": {
+          "name": "attending_dinner",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attending_party": {
+          "name": "attending_party",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         }
       },
