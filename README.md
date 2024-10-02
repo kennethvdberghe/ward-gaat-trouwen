@@ -5,6 +5,12 @@
 
 ## Development
 
+Apply migrations to local database
+
+```sh
+npx wrangler d1 migrations apply ward-gaat-trouwen --local
+```
+
 Run the dev server:
 
 ```sh
