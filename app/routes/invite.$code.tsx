@@ -3,11 +3,10 @@ import {
   LoaderFunctionArgs,
   json,
 } from "@remix-run/cloudflare";
-import { useFetcher, useLoaderData, useSubmit } from "@remix-run/react";
+import { useLoaderData, useSubmit } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { useState } from "react";
-import { invites } from "~/schema";
 import * as schema from "../schema";
 
 type Guest = typeof schema.guest.$inferSelect;
@@ -26,7 +25,7 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
   const { DB } = context.cloudflare.env;
   const db = drizzle(DB, { schema });
   const invite = await db.query.invites.findFirst({
-    where: eq(invites.code, code),
+    where: eq(schema.invites.code, code),
     with: {
       guests: true,
     },
@@ -39,8 +38,23 @@ export const loader = async ({ params, context }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request, context }: ActionFunctionArgs) => {
-  const formData = await request.json();
-  console.log(formData);
+  const guestsData = (await request.json()) as Guest[];
+  const { DB } = context.cloudflare.env;
+  const db = drizzle(DB, { schema });
+  await Promise.all(
+    guestsData.map((guestData: Guest) => {
+      return db
+        .update(schema.guest)
+        .set({
+          isAttending: guestData.isAttending,
+          attendingCeremony: guestData.attendingCeremony,
+          attendingReception: guestData.attendingReception,
+          attendingDinner: guestData.attendingDinner,
+          attendingParty: guestData.attendingParty,
+        })
+        .where(eq(schema.guest.id, guestData.id));
+    })
+  );
   return json({ success: true });
 };
 
@@ -54,8 +68,8 @@ const isComplete = (guest: Guest) => {
   );
 };
 
-const firstIncomplete = (guests: Guest[]) => {
-  return guests.findIndex((c) => !isComplete(c));
+const firstBlankGuestIdx = (guests: Guest[]) => {
+  return guests.findIndex((c) => c.isAttending == null);
 };
 
 export default function Invite() {
@@ -75,19 +89,23 @@ export default function Invite() {
   return (
     <div>
       <h1>Hallo {guestsInfo.map((guest) => guest.name).join(" & ")}</h1>
-      {guestsInfo
-        .filter((c) => isComplete(c))
-        .map((guest, index) => (
-          <Guest key={guest.id} guest={guest} onChange={onChange(index)} />
-        ))}
-      {firstIncomplete(guestsInfo) !== -1 ? (
-        <Guest
-          key={guestsInfo[firstIncomplete(guestsInfo)].id}
-          guest={guestsInfo[firstIncomplete(guestsInfo)]}
-          onChange={onChange(firstIncomplete(guestsInfo))}
-        />
-      ) : (
-        <button onClick={() => submit(guestsInfo, { method: "post" })}>
+      {guestsInfo.map((guest, index) => {
+        if (
+          firstBlankGuestIdx(guestsInfo) === index ||
+          guest.isAttending !== null
+        ) {
+          return (
+            <Guest key={guest.id} guest={guest} onChange={onChange(index)} />
+          );
+        }
+        return null;
+      })}
+      {guestsInfo.every(isComplete) && (
+        <button
+          onClick={() =>
+            submit(guestsInfo, { method: "post", encType: "application/json" })
+          }
+        >
           Submit
         </button>
       )}
@@ -120,7 +138,7 @@ const Guest = ({
 
   return (
     <div>
-      <p>
+      <p className="relative w-[max-content] font-mono before:absolute before:inset-0 before:animate-typewriter before:bg-white">
         {guest.name} kan er{" "}
         <select
           value={
